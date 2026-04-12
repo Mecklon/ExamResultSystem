@@ -1,6 +1,5 @@
 package com.project.ExamResultBackend.DTO;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,11 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ResultSaveResponse {
-    String studentId;
-    String status;
-    Long registrationNumber;
-    String message;
-    String departmentId;
-    Integer joiningYear;
+public class HighestMarksResponse {
+    private String departmentCode;
+    private Integer joiningYear;
+    private String subjectCode;
+    private Integer highestMarks;
 }

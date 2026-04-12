@@ -54,13 +54,13 @@ public class ResultService {
         for(int i =0;i< resultSaveResponse.size();i++){
             ResultSaveResponse currResponse = resultSaveResponse.get(i);
             ResultDTO currResult = ResultDTOS.get(i);
-            if(currResponse.getStatus().equals("SUCCESS") && !recomputedRankSet.contains(currResponse.getDepartmentId()+":"+currResult.getSemester())){
-                recomputedRankSet.add(currResponse.getDepartmentId()+":"+currResult.getSemester());
-                utilityService.recomputeSemesterWiseRank(currResponse.getDepartmentId(), currResult.getSemester());
+            if(currResponse.getStatus().equals("SUCCESS") && !recomputedRankSet.contains(currResponse.getDepartmentId()+":"+currResult.getSemester()+":"+currResponse.getJoiningYear())){
+                recomputedRankSet.add(currResponse.getDepartmentId()+":"+currResult.getSemester()+":"+currResponse.getJoiningYear());
+                utilityService.recomputeSemesterWiseRank(currResponse.getDepartmentId(), currResult.getSemester(), currResponse.getJoiningYear());
             }
-            if(currResponse.getStatus().equals("SUCCESS") && !recomputedRankSet.contains(currResponse.getDepartmentId())){
-                recomputedRankSet.add(currResponse.getDepartmentId());
-                utilityService.recomputeOverallRank(currResponse.getDepartmentId());
+            if(currResponse.getStatus().equals("SUCCESS") && !recomputedRankSet.contains(currResponse.getDepartmentId()+":"+currResponse.getJoiningYear())){
+                recomputedRankSet.add(currResponse.getDepartmentId()+":"+currResponse.getJoiningYear());
+                utilityService.recomputeOverallRank(currResponse.getDepartmentId(), currResponse.getJoiningYear());
             }
         }
         return resultSaveResponse;

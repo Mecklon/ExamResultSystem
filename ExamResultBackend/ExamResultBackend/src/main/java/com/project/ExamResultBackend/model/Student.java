@@ -30,6 +30,7 @@ public class Student {
     private String departmentId;
     private Integer totalCredits;
     private Double totalWeightGradeSum;
+    private Integer joiningYear;
 
     private Integer overAllClassRank;
     private Integer departmentRank;

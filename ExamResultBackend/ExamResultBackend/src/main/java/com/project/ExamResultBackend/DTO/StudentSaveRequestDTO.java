@@ -13,4 +13,5 @@ public class StudentSaveRequestDTO {
     Long registrationNumber;
     Character section;
     String departmentId;
+    Integer joiningYear;
 }

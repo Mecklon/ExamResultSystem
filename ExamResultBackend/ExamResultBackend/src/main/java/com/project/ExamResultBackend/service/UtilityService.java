@@ -7,6 +7,7 @@ import com.project.ExamResultBackend.repository.ResultRepository;
 import com.project.ExamResultBackend.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.bson.Document;
+import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
@@ -54,48 +55,48 @@ public class UtilityService {
     public void saveSingleResult(ResultDTO resultDTO, List<ResultSaveResponse> resultSaveResponse, HashMap<String, Subject> subjectMap, HashMap<String, Department> departmentMap){
 
         if (resultDTO.getMarksList() == null || resultDTO.getMarksList().isEmpty()) {
-            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Empty result list",""));return;
+            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Empty result list","",null));return;
         }
         if (resultDTO.getRegistrationNumber()==null) {
-            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",null,"null registration number",""));return;
+            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",null,"null registration number","",null));return;
         }
         Optional<Student> studentRequest = studentRepository.findByRegistrationNumber(resultDTO.getRegistrationNumber());
         if(studentRequest.isEmpty()){
-            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Student does not exist",""));return;
+            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Student does not exist","",null));return;
         }
         Student savedStudent = studentRequest.get();
         if(!departmentMap.containsKey(savedStudent.getDepartmentId())){
-            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Department does not exist",""));return;
+            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Department does not exist","",savedStudent.getJoiningYear()));return;
         }
         ArrayList<ArrayList<String>> allSemesterSubjectList = departmentMap.get(savedStudent.getDepartmentId()).getSubjectCodes();
         if (resultDTO.getSemester() <= 0 || resultDTO.getSemester() > allSemesterSubjectList.size()) {
-            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Invalid semester index",""));return;
+            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Invalid semester index","",savedStudent.getJoiningYear()));return;
         }
         ArrayList<String> currentSemesterSubjectList = allSemesterSubjectList.get(resultDTO.getSemester()-1);
         HashSet<String> currSemesterSubjetHashMap = new HashSet<>(currentSemesterSubjectList);
         if(currentSemesterSubjectList.size()!=resultDTO.getMarksList().size()){
-            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Missing subject details",""));return;
+            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Missing subject details","",savedStudent.getJoiningYear()));return;
         }
         ArrayList<Marks> marksList = new ArrayList<>();
         Set<String> seenSubjects = new HashSet<>();
         for(MarksDTO marks: resultDTO.getMarksList()){
             if(marks.getCode()==null  || marks.getInternalMarks()== null || marks.getExternalMarks() == null){
-                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Incomplete Marks detail",""));return;
+                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Incomplete Marks detail","",savedStudent.getJoiningYear()));return;
             }
             if (!seenSubjects.add(marks.getCode())) {
-                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Duplicate subject details",""));return;
+                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Duplicate subject details","",savedStudent.getJoiningYear()));return;
             }
             if(!subjectMap.containsKey(marks.getCode())){
-                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Subject does not exist",""));return;
+                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Subject does not exist","",savedStudent.getJoiningYear()));return;
             }
             if(!currSemesterSubjetHashMap.contains(marks.getCode())){
-                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Department subject miss match",""));return;
+                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Department subject miss match","",savedStudent.getJoiningYear()));return;
             }
             Subject currentSubject = subjectMap.get(marks.getCode());
             if (currentSubject.getTotalExternalMarks() < marks.getExternalMarks() ||
                     currentSubject.getTotalInternalMarks() < marks.getInternalMarks() ||
                     marks.getInternalMarks() < 0 || marks.getExternalMarks() < 0) {
-                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Invalid marks range",""));
+                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Invalid marks range","",savedStudent.getJoiningYear()));
                 return;
             }
             marksList.add(Marks.builder()
@@ -117,7 +118,7 @@ public class UtilityService {
             totalCredits += credits;
         }
         if (totalCredits == 0) {
-            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Total credits cannot be zero",""));
+            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Total credits cannot be zero","",savedStudent.getJoiningYear()));
             return;
         }
         double sgpa = weightedSum / totalCredits;
@@ -133,6 +134,7 @@ public class UtilityService {
                 .departmentRank(0)
                 .departmentTopper(false)
                 .section(savedStudent.getSection())
+                .joiningYear(savedStudent.getJoiningYear())
                 .build();
 
         Result oldResult = resultRepository.findByStudentIdAndSemester(savedStudent.getId(), resultDTO.getSemester());
@@ -153,18 +155,34 @@ public class UtilityService {
             resultRepository.save(newResult);
             studentRepository.save(savedStudent);
         } catch (DataIntegrityViolationException e) {
-            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Duplicate entry of semester",""));
+            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Duplicate entry of semester","",savedStudent.getJoiningYear()));
             return;
         }
-        resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "SUCCESS",resultDTO.getRegistrationNumber(),"",savedStudent.getDepartmentId()));
+        resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "SUCCESS",resultDTO.getRegistrationNumber(),"",savedStudent.getDepartmentId(),savedStudent.getJoiningYear()));
     }
 
     @Transactional
     public void saveSingleStudent(StudentSaveRequestDTO studentSaveRequestDTO, List<StudentSaveResponse> studentSaveResponses){
-        if(studentSaveRequestDTO.getName()==null|| studentSaveRequestDTO.getRegistrationNumber()==null ||studentSaveRequestDTO.getSection()==null || studentSaveRequestDTO.getDepartmentId()==null){
+        if(studentSaveRequestDTO.getName()==null|| studentSaveRequestDTO.getRegistrationNumber()==null ||studentSaveRequestDTO.getSection()==null || studentSaveRequestDTO.getDepartmentId()==null|| studentSaveRequestDTO.getJoiningYear()==null){
             studentSaveResponses.add(new StudentSaveResponse(null, "FAIlED", studentSaveRequestDTO.getRegistrationNumber(), "Incomplete student details"));
             return;
         }
+        int currentYear = java.time.Year.now().getValue();
+
+        if (studentSaveRequestDTO.getJoiningYear() < 2000 ||
+                studentSaveRequestDTO.getJoiningYear() > currentYear) {
+
+            studentSaveResponses.add(
+                    new StudentSaveResponse(
+                            null,
+                            "FAILED",
+                            studentSaveRequestDTO.getRegistrationNumber(),
+                            "Invalid joining year"
+                    )
+            );
+            return;
+        }
+
         Student newStudent = Student.builder()
                 .name(studentSaveRequestDTO.getName())
                 .registrationNumber(studentSaveRequestDTO.getRegistrationNumber())
@@ -176,6 +194,7 @@ public class UtilityService {
                 .totalWeightGradeSum(0.0)
                 .overAllClassRank(0)
                 .departmentRank(0)
+                .joiningYear(studentSaveRequestDTO.getJoiningYear())
                 .departmentTopper(false)
                 .build();
         Student savedStudent=null;
@@ -190,13 +209,18 @@ public class UtilityService {
     }
 
     @Transactional
-    public void recomputeOverallRank(String department) {
-        List<Document> pipeline = List.of(
+    public void recomputeOverallRank(String department, Integer joiningYear) {
+
+        List<Document> deptPipeline = List.of(
                 new Document("$match",
                         new Document("departmentId", department)
+                                .append("joiningYear", joiningYear)
                 ),
                 new Document("$setWindowFields",
-                        new Document("sortBy", new Document("cgpa", -1))
+                        new Document("sortBy",
+                                new Document("cgpa", -1)
+                                        .append("totalCredits", -1) // tie-breaker
+                        )
                                 .append("output",
                                         new Document("departmentRank",
                                                 new Document("$rank", new Document())
@@ -211,16 +235,24 @@ public class UtilityService {
         );
 
         mongoTemplate.getCollection("Student")
-                .aggregate(pipeline)
+                .aggregate(deptPipeline)
                 .toCollection();
 
-        pipeline = List.of(
+
+        List<Document> classPipeline = List.of(
                 new Document("$match",
                         new Document("departmentId", department)
+                                .append("joiningYear", joiningYear)
                 ),
                 new Document("$setWindowFields",
-                        new Document("partitionBy", "$section")
-                                .append("sortBy", new Document("cgpa", -1))
+                        new Document("partitionBy",
+                                new Document("section", "$section")
+                                        .append("joiningYear", "$joiningYear")
+                        )
+                                .append("sortBy",
+                                        new Document("cgpa", -1)
+                                                .append("totalCredits", -1)
+                                )
                                 .append("output",
                                         new Document("overAllClassRank",
                                                 new Document("$rank", new Document())
@@ -235,31 +267,39 @@ public class UtilityService {
         );
 
         mongoTemplate.getCollection("Student")
-                .aggregate(pipeline)
+                .aggregate(classPipeline)
                 .toCollection();
 
 
         mongoTemplate.getCollection("Student").updateMany(
-                new Document("departmentId", department),
+                new Document("departmentId", department)
+                        .append("joiningYear", joiningYear),
                 new Document("$set", new Document("departmentTopper", false))
         );
 
+
         mongoTemplate.getCollection("Student").updateMany(
                 new Document("departmentId", department)
+                        .append("joiningYear", joiningYear)
                         .append("departmentRank", 1),
                 new Document("$set", new Document("departmentTopper", true))
         );
     }
-
     @Transactional
-    public void recomputeSemesterWiseRank(String department, Integer semester) {
-        List<Document> pipeline = List.of(
+    public void recomputeSemesterWiseRank(String department, Integer semester, Integer joiningYear) {
+
+
+        List<Document> deptPipeline = List.of(
                 new Document("$match",
                         new Document("departmentId", department)
                                 .append("semester", semester)
+                                .append("joiningYear", joiningYear)
                 ),
                 new Document("$setWindowFields",
-                        new Document("sortBy", new Document("sgpa", -1))
+                        new Document("sortBy",
+                                new Document("sgpa", -1)
+                                        .append("totalCredits", -1) // tie-breaker
+                        )
                                 .append("output",
                                         new Document("departmentRank",
                                                 new Document("$rank", new Document())
@@ -274,18 +314,25 @@ public class UtilityService {
         );
 
         mongoTemplate.getCollection("Result")
-                .aggregate(pipeline)
+                .aggregate(deptPipeline)
                 .toCollection();
 
 
-        pipeline = List.of(
+        List<Document> classPipeline = List.of(
                 new Document("$match",
                         new Document("departmentId", department)
                                 .append("semester", semester)
+                                .append("joiningYear", joiningYear)
                 ),
                 new Document("$setWindowFields",
-                        new Document("partitionBy", "$section")
-                                .append("sortBy", new Document("sgpa", -1))
+                        new Document("partitionBy",
+                                new Document("section", "$section")
+                                        .append("joiningYear", "$joiningYear")
+                        )
+                                .append("sortBy",
+                                        new Document("sgpa", -1)
+                                                .append("totalCredits", -1)
+                                )
                                 .append("output",
                                         new Document("classRank",
                                                 new Document("$rank", new Document())
@@ -300,23 +347,254 @@ public class UtilityService {
         );
 
         mongoTemplate.getCollection("Result")
-                .aggregate(pipeline)
+                .aggregate(classPipeline)
                 .toCollection();
-
-
-        mongoTemplate.getCollection("Result").updateMany(
-                new Document("departmentId", department)
-                        .append("semester", semester),
-                new Document("$set", new Document("departmentTopper", false))
-        );
 
         mongoTemplate.getCollection("Result").updateMany(
                 new Document("departmentId", department)
                         .append("semester", semester)
+                        .append("joiningYear", joiningYear),
+                new Document("$set", new Document("departmentTopper", false))
+        );
+
+
+
+        mongoTemplate.getCollection("Result").updateMany(
+                new Document("departmentId", department)
+                        .append("semester", semester)
+                        .append("joiningYear", joiningYear)
                         .append("departmentRank", 1),
                 new Document("$set", new Document("departmentTopper", true))
         );
     }
 
+    public List<DepartmentAverageResponse> getDepartmentWiseAverage(String departmentCode, Integer joiningYear) {
 
+        List<Document> pipeline = List.of(
+
+                new Document("$match",
+                        new Document("departmentId", departmentCode)
+                                .append("joiningYear", joiningYear)
+                ),
+
+                new Document("$group",
+                        new Document("_id", null)
+                                .append("averageCGPA", new Document("$avg", "$cgpa"))
+                ),
+
+                new Document("$project",
+                        new Document("departmentCode", departmentCode)
+                                .append("joiningYear", joiningYear)
+                                .append("averageCGPA", 1)
+                                .append("_id", 0)
+                )
+        );
+
+        List<Document> docs = mongoTemplate.getCollection("Student")
+                .aggregate(pipeline)
+                .into(new ArrayList<>());
+
+        List<DepartmentAverageResponse> response = new ArrayList<>();
+
+        for (Document doc : docs) {
+            response.add(new DepartmentAverageResponse(
+                    doc.getString("departmentCode"),
+                    doc.getInteger("joiningYear"),
+                    doc.getDouble("averageCGPA")
+            ));
+        }
+
+        return response;
+    }
+
+    public List<HighestMarksResponse> getHighestMarksPerSubject(String departmentCode, Integer joiningYear) {
+
+        List<Document> pipeline = List.of(
+
+                new Document("$match",
+                        new Document("departmentId", departmentCode)
+                                .append("joiningYear", joiningYear)
+                ),
+
+                new Document("$unwind", "$marksList"),
+
+                new Document("$addFields",
+                        new Document("totalMarks",
+                                new Document("$add", List.of(
+                                        "$marksList.internalMarks",
+                                        "$marksList.externalMarks"
+                                ))
+                        )
+                ),
+
+                new Document("$group",
+                        new Document("_id",
+                                new Document("subjectCode", "$marksList.subject.code")
+                        )
+                                .append("highestMarks", new Document("$max", "$totalMarks"))
+                ),
+
+                new Document("$project",
+                        new Document("departmentCode", departmentCode)
+                                .append("joiningYear", joiningYear)
+                                .append("subjectCode", "$_id.subjectCode")
+                                .append("highestMarks", 1)
+                                .append("_id", 0)
+                )
+        );
+
+        List<Document> docs = mongoTemplate.getCollection("Result")
+                .aggregate(pipeline)
+                .into(new ArrayList<>());
+
+        List<HighestMarksResponse> response = new ArrayList<>();
+
+        for (Document doc : docs) {
+            response.add(new HighestMarksResponse(
+                    doc.getString("departmentCode"),
+                    doc.getInteger("joiningYear"),
+                    doc.getString("subjectCode"),
+                    doc.getInteger("highestMarks")
+            ));
+        }
+
+        return response;
+    }
+
+    public List<PassFailResponse> getPassFailCount(String departmentCode, Integer joiningYear) {
+
+        List<Document> pipeline = List.of(
+
+                new Document("$match",
+                        new Document("departmentId", departmentCode)
+                                .append("joiningYear", joiningYear)
+                ),
+
+                new Document("$group",
+                        new Document("_id", null)
+                                .append("passCount",
+                                        new Document("$sum",
+                                                new Document("$cond", List.of(
+                                                        new Document("$gte", List.of("$cgpa", 3.33)),
+                                                        1,
+                                                        0
+                                                ))
+                                        )
+                                )
+                                .append("failCount",
+                                        new Document("$sum",
+                                                new Document("$cond", List.of(
+                                                        new Document("$lt", List.of("$cgpa", 3.33)),
+                                                        1,
+                                                        0
+                                                ))
+                                        )
+                                )
+                ),
+
+                new Document("$project",
+                        new Document("departmentCode", departmentCode)
+                                .append("joiningYear", joiningYear)
+                                .append("passCount", 1)
+                                .append("failCount", 1)
+                                .append("_id", 0)
+                )
+        );
+
+        List<Document> docs = mongoTemplate.getCollection("Student")
+                .aggregate(pipeline)
+                .into(new ArrayList<>());
+
+        List<PassFailResponse> response = new ArrayList<>();
+
+        for (Document doc : docs) {
+            response.add(new PassFailResponse(
+                    doc.getString("departmentCode"),
+                    doc.getInteger("joiningYear"),
+                    doc.getInteger("passCount"),
+                    doc.getInteger("failCount")
+            ));
+        }
+
+        return response;
+    }
+
+
+    public List<DepartmentSubjectAnalyticsResponse> getDepartmentAnalytics(
+            String departmentCode,
+            Integer joiningYear
+    ) {
+
+        List<Document> pipeline = List.of(
+
+                new Document("$match",
+                        new Document("departmentId", departmentCode)
+                                .append("joiningYear", joiningYear)
+                ),
+
+                new Document("$unwind", "$marksList"),
+
+                new Document("$addFields",
+                        new Document("totalMarks",
+                                new Document("$add", List.of(
+                                        "$marksList.internalMarks",
+                                        "$marksList.externalMarks"
+                                ))
+                        )
+                ),
+
+                new Document("$group",
+                        new Document("_id",
+                                new Document("departmentCode", "$departmentId")
+                                        .append("joiningYear", "$joiningYear")
+                                        .append("subjectCode", "$marksList.subject.code")
+                        )
+                                .append("averageMarks", new Document("$avg", "$totalMarks"))
+                                .append("highestMarks", new Document("$max", "$totalMarks"))
+                                .append("passCount",
+                                        new Document("$sum",
+                                                new Document("$cond", List.of(
+                                                        new Document("$gte", List.of("$totalMarks", 40)),
+                                                        1,
+                                                        0
+                                                ))
+                                        )
+                                )
+                                .append("failCount",
+                                        new Document("$sum",
+                                                new Document("$cond", List.of(
+                                                        new Document("$lt", List.of("$totalMarks", 40)),
+                                                        1,
+                                                        0
+                                                ))
+                                        )
+                                )
+                )
+        );
+
+        List<Document> docs = mongoTemplate.getCollection("Result")
+                .aggregate(pipeline)
+                .into(new ArrayList<>());
+
+        List<DepartmentSubjectAnalyticsResponse> response = new ArrayList<>();
+
+        for (Document doc : docs) {
+
+            Document id = (Document) doc.get("_id");
+
+            response.add(
+                    DepartmentSubjectAnalyticsResponse.builder()
+                            .departmentCode(id.getString("departmentCode"))
+                            .joiningYear(id.getInteger("joiningYear"))
+                            .subjectCode(id.getString("subjectCode"))
+                            .averageMarks(doc.getDouble("averageMarks"))
+                            .highestMarks(doc.getInteger("highestMarks"))
+                            .passCount(doc.getInteger("passCount"))
+                            .failCount(doc.getInteger("failCount"))
+                            .build()
+            );
+        }
+
+        return response;
+    }
 }

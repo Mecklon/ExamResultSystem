@@ -85,7 +85,7 @@ public class DepartmentAndSubjectService {
 
         ArrayList<ArrayList<String>> newSubjectsReference = new ArrayList<>();
         Map<String, Subject> subjectToSave = new HashMap<>();
-        newDepartment.setSubjectList(newSubjectsReference);
+        newDepartment.setSubjectCodes(newSubjectsReference);
 
         for(ArrayList<SubjectDTO> semesterSubjects: departmentSaveRequest.getSubjectList()){
             newSubjectsReference.add(new ArrayList<>());
