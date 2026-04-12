@@ -6,10 +6,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class MarksDTO {
+@NoArgsConstructor
+public class SubjectDTO {
+    boolean isNew;
+    String name;
     String code;
-    Integer internalMarks;
-    Integer externalMarks;
+    Integer totalInternalMarks;
+    Integer totalExternalMarks;
+    Integer credits;
 }

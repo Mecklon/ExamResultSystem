@@ -13,5 +13,5 @@ public class ResultSaveResponse {
     String status;
     Long registrationNumber;
     String message;
-    String department;
+    String departmentId;
 }

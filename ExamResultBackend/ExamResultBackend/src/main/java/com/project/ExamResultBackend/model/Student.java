@@ -13,6 +13,8 @@ import java.util.ArrayList;
 
 @Document(collection = "Student")
 @CompoundIndex(def = "{'registrationNumber': 1}", unique = true)
+@CompoundIndex(def = "{'departmentId': 1, 'cgpa': -1}")
+@CompoundIndex(def = "{'departmentId': 1, 'section': 1, 'cgpa': -1}")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

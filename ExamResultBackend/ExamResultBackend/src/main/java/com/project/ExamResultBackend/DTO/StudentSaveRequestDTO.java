@@ -12,5 +12,5 @@ public class StudentSaveRequestDTO {
     String name;
     Long registrationNumber;
     Character section;
-    String department;
+    String departmentId;
 }

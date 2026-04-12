@@ -7,12 +7,12 @@ import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
-public class  ResultDTO {
-    String studentId;
-    Long registrationNumber;
-    Integer semester;
-    ArrayList<MarksDTO> marksList;
+public class DepartmentSaveRequest {
+    String code;
+    String name;
+    Integer duration;
+    ArrayList<ArrayList<SubjectDTO>> subjectList = new ArrayList<>();
 }
