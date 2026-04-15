@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 public class StudentSaveRequestDTO {
     String name;
     Long registrationNumber;
-    Character section;
+    String section;
     String departmentId;
     Integer joiningYear;
 }

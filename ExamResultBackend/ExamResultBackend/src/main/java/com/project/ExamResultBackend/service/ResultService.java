@@ -1,20 +1,22 @@
 package com.project.ExamResultBackend.service;
 
 
+import com.project.ExamResultBackend.DTO.MarksDTO;
+import com.project.ExamResultBackend.DTO.ResultOutputDTO;
 import com.project.ExamResultBackend.DTO.ResultSaveResponse;
 import com.project.ExamResultBackend.DTO.ResultDTO;
 import com.project.ExamResultBackend.model.Department;
+import com.project.ExamResultBackend.model.Result;
+import com.project.ExamResultBackend.model.Student;
 import com.project.ExamResultBackend.model.Subject;
 import com.project.ExamResultBackend.repository.DepartmentRepository;
+import com.project.ExamResultBackend.repository.ResultRepository;
 import com.project.ExamResultBackend.repository.StudentRepository;
 import com.project.ExamResultBackend.repository.SubjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +25,8 @@ public class ResultService {
     private final RedisService redisService;
     private final SubjectRepository subjectRepository;
     private final DepartmentRepository departmentRepository;
+    private final StudentRepository studentRepository;
+    private final ResultRepository resultRepository;
 
     public ArrayList<ResultSaveResponse> bulkSaveResults(List<ResultDTO> ResultDTOS) {
 
@@ -67,4 +71,18 @@ public class ResultService {
     }
 
 
+    public List<ResultOutputDTO> getStudentResult(Long registrationNumber) {
+        Optional<Student> studentFetch = studentRepository.findByRegistrationNumber(registrationNumber);
+        if(studentFetch.isEmpty()){
+            throw new RuntimeException("Invalid registration Number student not found");
+        }
+        List<Result> results = resultRepository.findByStudentId(registrationNumber.toString());
+        List<ResultOutputDTO> resultsDtos = results.stream().map(result -> {
+            return new ResultOutputDTO(
+                    result.getSemester(),
+                    result.getMarksList()
+            );
+        }).toList();
+        return resultsDtos;
+    }
 }

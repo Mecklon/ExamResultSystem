@@ -28,7 +28,7 @@ public class Result {
     private Double sgpa;
     private String studentId;
     private String departmentId;
-    private Character section;
+    private String section;
     private Integer totalCredits;
     private Integer classRank;
     private Integer departmentRank;

@@ -18,10 +18,11 @@ import java.util.List;
 public class StudentController {
     private final StudentService studentService;
 
-    @PostMapping("/addStudents")
+    @PostMapping("/admin/addStudent")
     public ResponseEntity<List<StudentSaveResponse>> saveStudents(@RequestBody List<StudentSaveRequestDTO> studentSaveRequestDTOs){
-        List<StudentSaveResponse> response = studentService.saveStudents(studentSaveRequestDTOs);
-        return ResponseEntity.status(HttpStatus.OK).body(response);
+        List<StudentSaveResponse> response = null;
+            response = studentService.saveStudents(studentSaveRequestDTOs);
+            return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
 }

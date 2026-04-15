@@ -17,7 +17,7 @@ public class DepartmentAndSubjectController {
 
     private final DepartmentAndSubjectService departmentAndSubjectService;
 
-    @PostMapping
+    @PostMapping("/admin/addDepartment")
     public ResponseEntity<Void> saveDepartment(@RequestBody DepartmentSaveRequest departmentSaveRequest){
         departmentAndSubjectService.saveDepartment(departmentSaveRequest);
         return ResponseEntity.status(HttpStatus.CREATED).build();

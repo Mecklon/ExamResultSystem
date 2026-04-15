@@ -27,6 +27,9 @@ public class DepartmentAndSubjectService {
         if(departmentSaveRequest.getCode() == null || departmentSaveRequest.getName()==null || departmentSaveRequest.getDuration()==null){
             throw new RuntimeException("Incomplete request");
         }
+        if(departmentSaveRequest.getDuration()*2!=departmentSaveRequest.getSubjectList().size()){
+            throw new RuntimeException("Invalid subject list according to duration");
+        }
 //        ArrayList<Subject> subjects = redisService.get("AllSubjects", ArrayList.class);
 //        if(subjects == null){
 //            subjects = new ArrayList<>(subjectRepository.findAll());

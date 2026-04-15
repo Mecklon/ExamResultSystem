@@ -14,7 +14,6 @@ import javax.swing.event.MouseInputListener;
 import java.util.List;
 
 @RestController
-@RequestMapping("/results/")
 @RequiredArgsConstructor
 public class ResultController {
 
@@ -22,7 +21,7 @@ public class ResultController {
     private final RedisService redisService;
     private final UtilityService utilityService;
 
-    @PostMapping("/saveResult")
+    @PostMapping("/admin/publish-results")
     public ResponseEntity<List<ResultSaveResponse>> bulkSaveResults(@RequestBody List<ResultDTO> ResultDTOS) {
         return ResponseEntity.status(HttpStatus.OK).body(resultService.bulkSaveResults(ResultDTOS));
     }
@@ -42,22 +41,9 @@ public class ResultController {
     }
 
 
-    @GetMapping("/getDepartmentAverage/{departmentCode}/{joiningYear}")
-    public ResponseEntity<List<DepartmentAverageResponse>> getDepartmentAverage(@PathVariable("departmentCode") String departmentCode, @PathVariable("joiningYear") int joiningYear){
-        return ResponseEntity.status(HttpStatus.OK).body(utilityService.getDepartmentWiseAverage(departmentCode, joiningYear));
-    }
 
-    @GetMapping("/getMaxMarksPerSubject/{departmentCode}/{joiningYear}")
-    public ResponseEntity<List<HighestMarksResponse>> getMaxMarksPerSubject(@PathVariable("departmentCode") String departmentCode, @PathVariable("joiningYear") int joiningYear){
-        return ResponseEntity.status(HttpStatus.OK).body(utilityService.getHighestMarksPerSubject(departmentCode, joiningYear));
-    }
 
-    @GetMapping("/getPassFailCount/{departmentCode}/{joiningYear}")
-    public ResponseEntity<List<PassFailResponse>> getPassFailCount(@PathVariable("departmentCode") String departmentCode, @PathVariable("joiningYear") int joiningYear){
-        return ResponseEntity.status(HttpStatus.OK).body(utilityService.getPassFailCount(departmentCode, joiningYear));
-    }
-
-    @GetMapping("/department-analytics/{departmentCode}/{joiningYear}")
+    @GetMapping("/stats/department/{departmentCode}/{joiningYear}")
     public ResponseEntity<List<DepartmentSubjectAnalyticsResponse>> getDepartmentAnalytics(
             @PathVariable String departmentCode,
             @PathVariable Integer joiningYear
@@ -66,5 +52,13 @@ public class ResultController {
                 utilityService.getDepartmentAnalytics(departmentCode, joiningYear)
         );
     }
+
+
+    @GetMapping("/result/{studentId}")
+    public ResponseEntity<List<ResultOutputDTO>> getStudentResult(@PathVariable Long registrationNumber){
+        return ResponseEntity.status(HttpStatus.OK).body(resultService.getStudentResult(registrationNumber));
+    }
+
+
 
 }

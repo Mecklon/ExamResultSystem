@@ -24,7 +24,7 @@ public class Student {
     private String id;
     private String name;
     private Long registrationNumber;
-    private Character section;
+    private String section;
     private Double cgpa;
     private Boolean isTopper;
     private String departmentId;
