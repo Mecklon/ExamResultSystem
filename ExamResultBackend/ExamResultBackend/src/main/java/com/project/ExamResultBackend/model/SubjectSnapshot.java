@@ -16,4 +16,5 @@ public class SubjectSnapshot {
     private Integer totalInternalMarks;
     private Integer totalExternalMarks;
     private Integer credits;
+    private Integer semester;
 }

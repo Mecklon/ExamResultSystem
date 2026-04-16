@@ -12,6 +12,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.*;
 
@@ -22,6 +24,7 @@ public class UtilityService {
     private final ResultRepository resultRepository;
     private final MongoTemplate mongoTemplate;
     private final RedisService redisService;
+    private final ObjectMapper objectMapper;
 
 
     public char calculateGrade(int marks, int totalMarks) {
@@ -102,7 +105,7 @@ public class UtilityService {
                     .internalMarks(marks.getInternalMarks())
                     .externalMarks(marks.getExternalMarks())
                     .grade(calculateGrade(marks.getInternalMarks() + marks.getExternalMarks(), currentSubject.getTotalExternalMarks() + currentSubject.getTotalInternalMarks()))
-                    .subjectSnapshot(new SubjectSnapshot(currentSubject.getName(), currentSubject.getCode(), currentSubject.getTotalInternalMarks(), currentSubject.getTotalExternalMarks(), currentSubject.getCredits()))
+                    .subjectSnapshot(new SubjectSnapshot(currentSubject.getName(), currentSubject.getCode(), currentSubject.getTotalInternalMarks(), currentSubject.getTotalExternalMarks(), currentSubject.getCredits(),resultDTO.getSemester()))
                     .build());
         }
 
@@ -158,6 +161,7 @@ public class UtilityService {
         }
             resultRepository.save(newResult);
         resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "SUCCESS",resultDTO.getRegistrationNumber(),"",savedStudent.getDepartmentId(),savedStudent.getJoiningYear()));
+        redisService.delete("result:"+resultDTO.getRegistrationNumber());
     }
 
     @Transactional
@@ -366,6 +370,15 @@ public class UtilityService {
             Integer joiningYear
     ) {
 
+        Object cachedResultObject = redisService.get("analytics:"+departmentCode+":"+joiningYear, Object.class);
+        if(cachedResultObject!=null){
+            List<DepartmentSubjectAnalyticsResponse> cachedAnalytics = objectMapper.convertValue(
+                    cachedResultObject,
+                    new TypeReference<ArrayList<DepartmentSubjectAnalyticsResponse>>() {}
+            );
+            return cachedAnalytics;
+        }
+
         List<Document> pipeline = List.of(
 
                 new Document("$match",
@@ -388,7 +401,8 @@ public class UtilityService {
                         new Document("_id",
                                 new Document("departmentCode", "$departmentId")
                                         .append("joiningYear", "$joiningYear")
-                                        .append("subjectCode", "$marksList.subject.code")
+                                        .append("subjectCode", "$marksList.subjectSnapshot.code")
+                                        .append("semester", "$marksList.subjectSnapshot.semester")
                         )
                                 .append("averageMarks", new Document("$avg", "$totalMarks"))
                                 .append("highestMarks", new Document("$max", "$totalMarks"))
@@ -432,10 +446,11 @@ public class UtilityService {
                             .highestMarks(doc.getInteger("highestMarks"))
                             .passCount(doc.getInteger("passCount"))
                             .failCount(doc.getInteger("failCount"))
+                            .semester(id.getInteger("semester"))
                             .build()
             );
         }
-
+        redisService.set("analytics:"+departmentCode+":"+joiningYear,response, 60*10L);
         return response;
     }
 }

@@ -61,6 +61,11 @@ public class ResultController {
 
     }
 
+    @GetMapping("/leaderboard/{departmentId}/{joiningYear}/{semester}")
+    public ResponseEntity<Void> getLeaderBoard(String departmentId, Integer joiningYear, Integer semester){
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
+
 
 
 }

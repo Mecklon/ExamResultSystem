@@ -17,4 +17,5 @@ public class DepartmentSubjectAnalyticsResponse {
     private Integer highestMarks;
     private Integer passCount;
     private Integer failCount;
+    private Integer semester;
 }
