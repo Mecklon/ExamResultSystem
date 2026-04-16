@@ -9,7 +9,10 @@ import lombok.RequiredArgsConstructor;
 import org.bson.Document;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.core.type.TypeReference;
@@ -25,6 +28,8 @@ public class UtilityService {
     private final MongoTemplate mongoTemplate;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
+
+
 
 
     public char calculateGrade(int marks, int totalMarks) {
@@ -137,6 +142,7 @@ public class UtilityService {
                 .departmentTopper(false)
                 .section(savedStudent.getSection())
                 .joiningYear(savedStudent.getJoiningYear())
+                .name(savedStudent.getName())
                 .build();
 
         Result oldResult = resultRepository.findByStudentIdAndSemester(savedStudent.getId(), resultDTO.getSemester());
@@ -453,4 +459,46 @@ public class UtilityService {
         redisService.set("analytics:"+departmentCode+":"+joiningYear,response, 60*10L);
         return response;
     }
+
+    public List<Result> getLeaderboardPerSem(String departmentId, Integer joiningYear, Integer semester) {
+
+        if(departmentId == null || joiningYear == null || semester == null){
+            throw new RuntimeException("Incompelete Request");
+        }
+
+        Object cachedLeaderBoardObject = redisService.get("leaderboard:"+departmentId+":"+joiningYear+":"+semester, Object.class);
+        if(cachedLeaderBoardObject!=null){
+            List<Result> cachedLeaderboard = objectMapper.convertValue(
+                    cachedLeaderBoardObject,
+                    new TypeReference<ArrayList<Result>>() {}
+            );
+            return cachedLeaderboard;
+        }
+
+        Criteria criteria = Criteria.where("departmentId").is(departmentId)
+                .and("joiningYear").is(joiningYear)
+                .and("semester").is(semester);
+
+        Query query = new Query(criteria)
+                .with(Sort.by(Sort.Direction.ASC, "departmentRank"))
+                .limit(10);
+
+        List<Result> leaderboard =  mongoTemplate.find(query, Result.class);
+        redisService.set("leaderboard:"+departmentId+":"+joiningYear+":"+semester , leaderboard, 60*10L);
+        return leaderboard;
+    }
+
+    public List<Student> getLeaderboard(String departmentId, Integer joiningYear){
+        if(departmentId == null || joiningYear == null){
+            throw new RuntimeException("Incomplete Request");
+        }
+        Criteria criteria = Criteria.where("departmentId").is(departmentId)
+                .and("joiningYear").is(joiningYear);
+
+        Query query = new Query(criteria)
+                .with(Sort.by(Sort.Direction.ASC, "departmentRank"))
+                .limit(10);
+        return mongoTemplate.find(query, Student.class);
+    }
 }
+

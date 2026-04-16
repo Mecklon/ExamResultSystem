@@ -33,4 +33,5 @@ public class Result {
     private Integer departmentRank;
     private Boolean departmentTopper;
     private Integer joiningYear;
+    private String name;
 }

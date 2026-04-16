@@ -2,6 +2,8 @@ package com.project.ExamResultBackend.controller;
 
 
 import com.project.ExamResultBackend.DTO.*;
+import com.project.ExamResultBackend.model.Result;
+import com.project.ExamResultBackend.model.Student;
 import com.project.ExamResultBackend.service.RedisService;
 import com.project.ExamResultBackend.service.ResultService;
 import com.project.ExamResultBackend.service.UtilityService;
@@ -61,11 +63,14 @@ public class ResultController {
 
     }
 
-    @GetMapping("/leaderboard/{departmentId}/{joiningYear}/{semester}")
-    public ResponseEntity<Void> getLeaderBoard(String departmentId, Integer joiningYear, Integer semester){
-        return ResponseEntity.status(HttpStatus.OK).build();
+    @GetMapping("/leaderboardPerSem/{departmentId}/{joiningYear}/{semester}")
+    public ResponseEntity<List<Result>> getLeaderBoardPerSem(@PathVariable("departmentId") String departmentId,@PathVariable("joiningYear") Integer joiningYear,@PathVariable("semester") Integer semester){
+        return ResponseEntity.status(HttpStatus.OK).body(utilityService.getLeaderboardPerSem(departmentId, joiningYear, semester));
     }
 
-
+    @GetMapping("/leaderboard/{departmentId}/{joiningYear}")
+    public ResponseEntity<List<Student>> getLeaderBoard(@PathVariable("departmentId") String departmentId,@PathVariable("joiningYear") Integer joiningYear){
+        return ResponseEntity.status(HttpStatus.OK).body(utilityService.getLeaderboard(departmentId, joiningYear));
+    }
 
 }
