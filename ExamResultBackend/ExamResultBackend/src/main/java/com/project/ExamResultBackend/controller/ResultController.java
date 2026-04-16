@@ -23,6 +23,7 @@ public class ResultController {
 
     @PostMapping("/admin/publish-results")
     public ResponseEntity<List<ResultSaveResponse>> bulkSaveResults(@RequestBody List<ResultDTO> ResultDTOS) {
+
         return ResponseEntity.status(HttpStatus.OK).body(resultService.bulkSaveResults(ResultDTOS));
     }
 
@@ -55,8 +56,9 @@ public class ResultController {
 
 
     @GetMapping("/result/{studentId}")
-    public ResponseEntity<List<ResultOutputDTO>> getStudentResult(@PathVariable Long registrationNumber){
-        return ResponseEntity.status(HttpStatus.OK).body(resultService.getStudentResult(registrationNumber));
+    public ResponseEntity<List<ResultOutputDTO>> getStudentResult(@PathVariable("studentId") Long registrationNumber){
+            return ResponseEntity.status(HttpStatus.OK).body(resultService.getStudentResult(registrationNumber));
+
     }
 
 

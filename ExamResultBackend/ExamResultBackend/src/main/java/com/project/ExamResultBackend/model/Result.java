@@ -15,7 +15,6 @@ import java.util.ArrayList;
 @CompoundIndex(def = "{'studentId': 1, 'semester': 1}", unique = true)
 @CompoundIndex(def = "{'departmentId': 1, 'semester': 1, 'sgpa': -1}")
 @CompoundIndex(def = "{'departmentId': 1, 'semester': 1, 'section': 1, 'sgpa': -1}")
-@CompoundIndex(def = "{'studentId': 1, 'semester': 1,'department':1}", unique = true)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

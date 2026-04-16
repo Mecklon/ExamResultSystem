@@ -45,7 +45,6 @@ public class UtilityService {
             case 'D':
                 return 4;
             default:
-                System.out.println("Returning 0");
                 return 0;
         }
     }
@@ -103,7 +102,7 @@ public class UtilityService {
                     .internalMarks(marks.getInternalMarks())
                     .externalMarks(marks.getExternalMarks())
                     .grade(calculateGrade(marks.getInternalMarks() + marks.getExternalMarks(), currentSubject.getTotalExternalMarks() + currentSubject.getTotalInternalMarks()))
-                    .subject(currentSubject)
+                    .subjectSnapshot(new SubjectSnapshot(currentSubject.getName(), currentSubject.getCode(), currentSubject.getTotalInternalMarks(), currentSubject.getTotalExternalMarks(), currentSubject.getCredits()))
                     .build());
         }
 
@@ -112,7 +111,7 @@ public class UtilityService {
 
         for (Marks marks : marksList) {
             int gradePoint = getGradePoint(marks.getGrade());
-            int credits = marks.getSubject().getCredits();
+            int credits = marks.getSubjectSnapshot().getCredits();
             if (credits == 0) continue;
             weightedSum += gradePoint * credits;
             totalCredits += credits;
@@ -152,17 +151,19 @@ public class UtilityService {
         savedStudent.setTotalWeightGradeSum(newTotalWeightedSum);
 
         try {
-            resultRepository.save(newResult);
             studentRepository.save(savedStudent);
         } catch (DataIntegrityViolationException e) {
             resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Duplicate entry of semester","",savedStudent.getJoiningYear()));
             return;
         }
+            resultRepository.save(newResult);
         resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "SUCCESS",resultDTO.getRegistrationNumber(),"",savedStudent.getDepartmentId(),savedStudent.getJoiningYear()));
     }
 
     @Transactional
     public void saveSingleStudent(StudentSaveRequestDTO studentSaveRequestDTO, List<StudentSaveResponse> studentSaveResponses){
+
+
         if(studentSaveRequestDTO.getName()==null|| studentSaveRequestDTO.getRegistrationNumber()==null ||studentSaveRequestDTO.getSection()==null || studentSaveRequestDTO.getDepartmentId()==null|| studentSaveRequestDTO.getJoiningYear()==null){
             studentSaveResponses.add(new StudentSaveResponse(null, "FAIlED", studentSaveRequestDTO.getRegistrationNumber(), "Incomplete student details"));
             return;
@@ -218,8 +219,7 @@ public class UtilityService {
                 ),
                 new Document("$setWindowFields",
                         new Document("sortBy",
-                                new Document("cgpa", -1)
-                                        .append("totalCredits", -1) // tie-breaker
+                                new Document("cgpa", -1)   // ✅ ONLY ONE FIELD
                         )
                                 .append("output",
                                         new Document("departmentRank",
@@ -245,13 +245,9 @@ public class UtilityService {
                                 .append("joiningYear", joiningYear)
                 ),
                 new Document("$setWindowFields",
-                        new Document("partitionBy",
-                                new Document("section", "$section")
-                                        .append("joiningYear", "$joiningYear")
-                        )
+                        new Document("partitionBy", "$section")   // ✅ CORRECT
                                 .append("sortBy",
                                         new Document("cgpa", -1)
-                                                .append("totalCredits", -1)
                                 )
                                 .append("output",
                                         new Document("overAllClassRank",
@@ -288,7 +284,6 @@ public class UtilityService {
     @Transactional
     public void recomputeSemesterWiseRank(String department, Integer semester, Integer joiningYear) {
 
-
         List<Document> deptPipeline = List.of(
                 new Document("$match",
                         new Document("departmentId", department)
@@ -297,8 +292,7 @@ public class UtilityService {
                 ),
                 new Document("$setWindowFields",
                         new Document("sortBy",
-                                new Document("sgpa", -1)
-                                        .append("totalCredits", -1) // tie-breaker
+                                new Document("sgpa", -1)   // ✅ ONLY ONE FIELD (IMPORTANT)
                         )
                                 .append("output",
                                         new Document("departmentRank",
@@ -325,13 +319,9 @@ public class UtilityService {
                                 .append("joiningYear", joiningYear)
                 ),
                 new Document("$setWindowFields",
-                        new Document("partitionBy",
-                                new Document("section", "$section")
-                                        .append("joiningYear", "$joiningYear")
-                        )
+                        new Document("partitionBy", "$section")   // ✅ FIXED
                                 .append("sortBy",
                                         new Document("sgpa", -1)
-                                                .append("totalCredits", -1)
                                 )
                                 .append("output",
                                         new Document("classRank",
@@ -350,13 +340,15 @@ public class UtilityService {
                 .aggregate(classPipeline)
                 .toCollection();
 
+
         mongoTemplate.getCollection("Result").updateMany(
                 new Document("departmentId", department)
                         .append("semester", semester)
                         .append("joiningYear", joiningYear),
-                new Document("$set", new Document("departmentTopper", false))
+                new Document("$set",
+                        new Document("departmentTopper", false)
+                )
         );
-
 
 
         mongoTemplate.getCollection("Result").updateMany(
@@ -364,10 +356,11 @@ public class UtilityService {
                         .append("semester", semester)
                         .append("joiningYear", joiningYear)
                         .append("departmentRank", 1),
-                new Document("$set", new Document("departmentTopper", true))
+                new Document("$set",
+                        new Document("departmentTopper", true)
+                )
         );
     }
-
     public List<DepartmentSubjectAnalyticsResponse> getDepartmentAnalytics(
             String departmentCode,
             Integer joiningYear

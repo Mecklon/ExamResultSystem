@@ -15,6 +15,8 @@ import com.project.ExamResultBackend.repository.StudentRepository;
 import com.project.ExamResultBackend.repository.SubjectRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.*;
 
@@ -27,23 +29,39 @@ public class ResultService {
     private final DepartmentRepository departmentRepository;
     private final StudentRepository studentRepository;
     private final ResultRepository resultRepository;
-
+    private final ObjectMapper objectMapper;
     public ArrayList<ResultSaveResponse> bulkSaveResults(List<ResultDTO> ResultDTOS) {
 
 
-        ArrayList<Subject> allSubject = redisService.get("AllSubjects", ArrayList.class);
-        if(allSubject==null){
+        Object cachedSubjects = redisService.get("AllSubjects", Object.class);
+
+        ArrayList<Subject> allSubject;
+
+        if (cachedSubjects == null) {
             allSubject = new ArrayList<>(subjectRepository.findAll());
-            redisService.set("AllSubjects",allSubject, (long)60*60);
+            redisService.set("AllSubjects", allSubject, 60 * 60L);
+        } else {
+            allSubject = objectMapper.convertValue(
+                    cachedSubjects,
+                    new TypeReference<ArrayList<Subject>>() {}
+            );
         }
         HashMap<String, Subject> subjectMap = new HashMap<>();
         for(Subject subject: allSubject){
             subjectMap.put(subject.getCode(), subject);
         }
-        ArrayList<Department> allDepartments = redisService.get("AllDepartments", ArrayList.class);
-        if(allDepartments==null){
+        Object cachedDepartments = redisService.get("AllDepartments", Object.class);
+
+        ArrayList<Department> allDepartments;
+
+        if (cachedDepartments == null) {
             allDepartments = new ArrayList<>(departmentRepository.findAll());
-            redisService.set("AllDepartments", allDepartments, (long)60*60);
+            redisService.set("AllDepartments", allDepartments, 60 * 60L);
+        } else {
+            allDepartments = objectMapper.convertValue(
+                    cachedDepartments,
+                    new TypeReference<ArrayList<Department>>() {}
+            );
         }
         HashMap<String, Department> departmentMap = new HashMap<>();
         for(Department department: allDepartments){
@@ -72,17 +90,27 @@ public class ResultService {
 
 
     public List<ResultOutputDTO> getStudentResult(Long registrationNumber) {
+        Object cachedResultObject = redisService.get("result:"+registrationNumber, Object.class);
+        if(cachedResultObject!=null){
+            List<ResultOutputDTO> cachedResult = objectMapper.convertValue(
+                    cachedResultObject,
+                    new TypeReference<ArrayList<ResultOutputDTO>>() {}
+            );
+            return cachedResult;
+        }
         Optional<Student> studentFetch = studentRepository.findByRegistrationNumber(registrationNumber);
         if(studentFetch.isEmpty()){
             throw new RuntimeException("Invalid registration Number student not found");
         }
-        List<Result> results = resultRepository.findByStudentId(registrationNumber.toString());
+        List<Result> results = resultRepository.findByStudentId(studentFetch.get().getId());
         List<ResultOutputDTO> resultsDtos = results.stream().map(result -> {
             return new ResultOutputDTO(
                     result.getSemester(),
                     result.getMarksList()
             );
         }).toList();
+
+        redisService.set("result:"+registrationNumber, resultsDtos, 60*10L);
         return resultsDtos;
     }
 }

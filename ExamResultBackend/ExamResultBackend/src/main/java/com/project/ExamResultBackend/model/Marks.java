@@ -16,5 +16,5 @@ public class Marks {
     private Integer internalMarks;
     private Integer externalMarks;
     private Character grade;
-    private Subject subject;
+    private SubjectSnapshot subjectSnapshot;
 }
