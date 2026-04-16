@@ -85,6 +85,8 @@ public class ResultService {
                 utilityService.recomputeOverallRank(currResponse.getDepartmentId(), currResponse.getJoiningYear());
             }
         }
+
+
         return resultSaveResponse;
     }
 

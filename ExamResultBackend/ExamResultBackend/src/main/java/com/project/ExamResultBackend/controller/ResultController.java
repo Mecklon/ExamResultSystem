@@ -62,15 +62,22 @@ public class ResultController {
             return ResponseEntity.status(HttpStatus.OK).body(resultService.getStudentResult(registrationNumber));
 
     }
-
-    @GetMapping("/leaderboardPerSem/{departmentId}/{joiningYear}/{semester}")
-    public ResponseEntity<List<Result>> getLeaderBoardPerSem(@PathVariable("departmentId") String departmentId,@PathVariable("joiningYear") Integer joiningYear,@PathVariable("semester") Integer semester){
-        return ResponseEntity.status(HttpStatus.OK).body(utilityService.getLeaderboardPerSem(departmentId, joiningYear, semester));
-    }
-
     @GetMapping("/leaderboard/{departmentId}/{joiningYear}")
-    public ResponseEntity<List<Student>> getLeaderBoard(@PathVariable("departmentId") String departmentId,@PathVariable("joiningYear") Integer joiningYear){
-        return ResponseEntity.status(HttpStatus.OK).body(utilityService.getLeaderboard(departmentId, joiningYear));
+    public ResponseEntity<List<LeaderboardEntry>> getLeaderboard(
+            @PathVariable String departmentId,
+            @PathVariable Integer joiningYear,
+            @RequestParam(required = false) Integer semester,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+
+        return ResponseEntity.ok(
+                utilityService.getLeaderboard(
+                        departmentId,
+                        joiningYear,
+                        semester,
+                        limit
+                )
+        );
     }
 
 }

@@ -34,4 +34,5 @@ public class Result {
     private Boolean departmentTopper;
     private Integer joiningYear;
     private String name;
+    private Long registrationNumber;
 }

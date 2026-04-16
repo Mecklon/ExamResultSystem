@@ -13,12 +13,15 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +31,7 @@ public class UtilityService {
     private final MongoTemplate mongoTemplate;
     private final RedisService redisService;
     private final ObjectMapper objectMapper;
-
+    private final RedisTemplate redisTemplate;
 
 
 
@@ -143,6 +146,7 @@ public class UtilityService {
                 .section(savedStudent.getSection())
                 .joiningYear(savedStudent.getJoiningYear())
                 .name(savedStudent.getName())
+                .registrationNumber(savedStudent.getRegistrationNumber())
                 .build();
 
         Result oldResult = resultRepository.findByStudentIdAndSemester(savedStudent.getId(), resultDTO.getSemester());
@@ -167,7 +171,35 @@ public class UtilityService {
         }
             resultRepository.save(newResult);
         resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "SUCCESS",resultDTO.getRegistrationNumber(),"",savedStudent.getDepartmentId(),savedStudent.getJoiningYear()));
+        updateLeaderboards(savedStudent, newResult);
         redisService.delete("result:"+resultDTO.getRegistrationNumber());
+    }
+
+    public void updateLeaderboards(Student student, Result result) {
+
+        String studentId = student.getRegistrationNumber().toString();
+        String member = student.getRegistrationNumber() + "|" + student.getName();
+
+        String deptKey = "leaderboard:dept:" +
+                student.getDepartmentId() + ":" +
+                student.getJoiningYear();
+
+        redisTemplate.opsForZSet().add(
+                deptKey,
+                member,
+                student.getCgpa()
+        );
+
+        String semKey = "leaderboard:sem:" +
+                student.getDepartmentId() + ":" +
+                student.getJoiningYear() + ":" +
+                result.getSemester();
+
+        redisTemplate.opsForZSet().add(
+                semKey,
+                member,
+                result.getSgpa()
+        );
     }
 
     @Transactional
@@ -460,45 +492,89 @@ public class UtilityService {
         return response;
     }
 
-    public List<Result> getLeaderboardPerSem(String departmentId, Integer joiningYear, Integer semester) {
+    public List<LeaderboardEntry> getLeaderboard(String departmentId,
+                                                 Integer joiningYear,
+                                                 Integer semester,
+                                                 int limit) {
 
-        if(departmentId == null || joiningYear == null || semester == null){
-            throw new RuntimeException("Incompelete Request");
+        String key = (semester != null)
+                ? "leaderboard:sem:" + departmentId + ":" + joiningYear + ":" + semester
+                : "leaderboard:dept:" + departmentId + ":" + joiningYear;
+
+        Long size = redisTemplate.opsForZSet().zCard(key);
+
+        if (size == null || size == 0) {
+
+            if (semester != null) {
+
+                List<Result> results = mongoTemplate.find(
+                        Query.query(
+                                Criteria.where("departmentId").is(departmentId)
+                                        .and("joiningYear").is(joiningYear)
+                                        .and("semester").is(semester)
+                        ).with(Sort.by(Sort.Direction.DESC, "sgpa")),
+                        Result.class
+                );
+
+                for (Result r : results) {
+
+                    String member = r.getRegistrationNumber() + "|" + r.getName();
+
+                    redisTemplate.opsForZSet().add(
+                            key,
+                            member,
+                            r.getSgpa()
+                    );
+                }
+
+            } else {
+
+                List<Student> students = mongoTemplate.find(
+                        Query.query(
+                                Criteria.where("departmentId").is(departmentId)
+                                        .and("joiningYear").is(joiningYear)
+                        ).with(Sort.by(Sort.Direction.DESC, "cgpa")),
+                        Student.class
+                );
+
+                for (Student s : students) {
+
+                    String member = s.getRegistrationNumber() + "|" + s.getName();
+
+                    redisTemplate.opsForZSet().add(
+                            key,
+                            member,
+                            s.getCgpa()
+                    );
+                }
+            }
         }
 
-        Object cachedLeaderBoardObject = redisService.get("leaderboard:"+departmentId+":"+joiningYear+":"+semester, Object.class);
-        if(cachedLeaderBoardObject!=null){
-            List<Result> cachedLeaderboard = objectMapper.convertValue(
-                    cachedLeaderBoardObject,
-                    new TypeReference<ArrayList<Result>>() {}
-            );
-            return cachedLeaderboard;
+        Set<ZSetOperations.TypedTuple<String>> result =
+                redisTemplate.opsForZSet()
+                        .reverseRangeWithScores(key, 0, limit - 1);
+
+        if (result == null || result.isEmpty()) {
+            return Collections.emptyList();
         }
 
-        Criteria criteria = Criteria.where("departmentId").is(departmentId)
-                .and("joiningYear").is(joiningYear)
-                .and("semester").is(semester);
+        List<LeaderboardEntry> leaderboard = new ArrayList<>();
 
-        Query query = new Query(criteria)
-                .with(Sort.by(Sort.Direction.ASC, "departmentRank"))
-                .limit(10);
+        for (ZSetOperations.TypedTuple<String> entry : result) {
 
-        List<Result> leaderboard =  mongoTemplate.find(query, Result.class);
-        redisService.set("leaderboard:"+departmentId+":"+joiningYear+":"+semester , leaderboard, 60*10L);
+            String[] parts = entry.getValue().split("\\|");
+
+            String studentId = parts[0];
+            String name = (parts.length > 1) ? parts[1] : "UNKNOWN";
+
+            leaderboard.add(new LeaderboardEntry(
+                    studentId,
+                    entry.getScore(),
+                    name
+            ));
+        }
+
         return leaderboard;
-    }
-
-    public List<Student> getLeaderboard(String departmentId, Integer joiningYear){
-        if(departmentId == null || joiningYear == null){
-            throw new RuntimeException("Incomplete Request");
-        }
-        Criteria criteria = Criteria.where("departmentId").is(departmentId)
-                .and("joiningYear").is(joiningYear);
-
-        Query query = new Query(criteria)
-                .with(Sort.by(Sort.Direction.ASC, "departmentRank"))
-                .limit(10);
-        return mongoTemplate.find(query, Student.class);
     }
 }
 
