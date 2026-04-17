@@ -10,6 +10,7 @@ import com.project.ExamResultBackend.service.UtilityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.swing.event.MouseInputListener;
@@ -22,6 +23,7 @@ public class ResultController {
     private final ResultService resultService;
     private final RedisService redisService;
     private final UtilityService utilityService;
+    private final PasswordEncoder passwordEncoder;
 
     @PostMapping("/admin/publish-results")
     public ResponseEntity<List<ResultSaveResponse>> bulkSaveResults(@RequestBody List<ResultDTO> ResultDTOS) {
@@ -32,6 +34,8 @@ public class ResultController {
 
     @GetMapping("/test")
     public String test(){
+        String encoded = passwordEncoder.encode("ExamPassWord123");
+        System.out.println(encoded);
         String res = redisService.get("name",String.class);
         if(res!=null){
             System.out.println("redis hit");

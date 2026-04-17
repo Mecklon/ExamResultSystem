@@ -23,6 +23,7 @@ public class Student {
     @Id
     private String id;
     private String name;
+
     private Long registrationNumber;
     private String section;
     private Double cgpa;
@@ -35,5 +36,7 @@ public class Student {
     private Integer overAllClassRank;
     private Integer departmentRank;
     private Boolean departmentTopper;
+
+    private String password;
 }
 
