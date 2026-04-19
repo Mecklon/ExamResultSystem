@@ -1,15 +1,14 @@
 package com.project.ExamResultBackend.controller;
 
 
+import com.project.ExamResultBackend.DTO.PredictionDTO;
 import com.project.ExamResultBackend.DTO.StudentSaveRequestDTO;
 import com.project.ExamResultBackend.DTO.StudentSaveResponse;
 import com.project.ExamResultBackend.service.StudentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -24,5 +23,12 @@ public class StudentController {
             response = studentService.saveStudents(studentSaveRequestDTOs);
             return ResponseEntity.status(HttpStatus.OK).body(response);
     }
+
+
+    @GetMapping("/admin/getPredictions/{prefix}")
+    public ResponseEntity<List<PredictionDTO>> getPredictions(@PathVariable("prefix") String prefix){
+        return ResponseEntity.status(HttpStatus.OK).body(studentService.getPrediction(prefix));
+    }
+
 
 }

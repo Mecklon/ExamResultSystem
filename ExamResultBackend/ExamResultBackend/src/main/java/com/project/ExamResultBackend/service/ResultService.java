@@ -108,6 +108,8 @@ public class ResultService {
         List<ResultOutputDTO> resultsDtos = results.stream().map(result -> {
             return new ResultOutputDTO(
                     result.getSemester(),
+                    studentFetch.get().getSection(),
+                    studentFetch.get().getJoiningYear(),
                     result.getMarksList()
             );
         }).toList();

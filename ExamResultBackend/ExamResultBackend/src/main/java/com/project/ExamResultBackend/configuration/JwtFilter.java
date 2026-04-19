@@ -40,7 +40,6 @@ public class JwtFilter extends OncePerRequestFilter {
         try {
             username = jwtUtil.extractUsername(token);
         } catch (Exception e) {
-            // ✅ Invalid token → skip authentication
             filterChain.doFilter(request, response);
             return;
         }

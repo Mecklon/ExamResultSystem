@@ -13,5 +13,7 @@ import java.util.ArrayList;
 @Data
 public class ResultOutputDTO {
     Integer semester;
+    String section;
+    Integer joiningYear;
     ArrayList<Marks> marksList;
 }

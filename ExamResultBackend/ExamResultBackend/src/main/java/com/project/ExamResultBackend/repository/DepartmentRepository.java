@@ -10,4 +10,8 @@ import java.util.Optional;
 @Repository
 public interface DepartmentRepository extends MongoRepository<Department, String> {
     Optional<Department> findByCode(String code);
+
+    boolean existsByCode(String departmentCode);
+
+    void deleteByCode(String departmentCode);
 }

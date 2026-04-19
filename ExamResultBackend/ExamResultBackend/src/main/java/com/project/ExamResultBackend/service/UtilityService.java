@@ -76,37 +76,37 @@ public class UtilityService {
         }
         Student savedStudent = studentRequest.get();
         if(!departmentMap.containsKey(savedStudent.getDepartmentId())){
-            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Department does not exist","",savedStudent.getJoiningYear()));return;
+            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Department does not exist",savedStudent.getDepartmentId(),savedStudent.getJoiningYear()));return;
         }
         ArrayList<ArrayList<String>> allSemesterSubjectList = departmentMap.get(savedStudent.getDepartmentId()).getSubjectCodes();
         if (resultDTO.getSemester() <= 0 || resultDTO.getSemester() > allSemesterSubjectList.size()) {
-            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Invalid semester index","",savedStudent.getJoiningYear()));return;
+            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),resultDTO.getSemester()+"Invalid semester index",savedStudent.getDepartmentId(),savedStudent.getJoiningYear()));return;
         }
         ArrayList<String> currentSemesterSubjectList = allSemesterSubjectList.get(resultDTO.getSemester()-1);
         HashSet<String> currSemesterSubjetHashMap = new HashSet<>(currentSemesterSubjectList);
         if(currentSemesterSubjectList.size()!=resultDTO.getMarksList().size()){
-            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Missing subject details","",savedStudent.getJoiningYear()));return;
+            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),resultDTO.getSemester()+"Missing subject details",savedStudent.getDepartmentId(),savedStudent.getJoiningYear()));return;
         }
         ArrayList<Marks> marksList = new ArrayList<>();
         Set<String> seenSubjects = new HashSet<>();
         for(MarksDTO marks: resultDTO.getMarksList()){
             if(marks.getCode()==null  || marks.getInternalMarks()== null || marks.getExternalMarks() == null){
-                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Incomplete Marks detail","",savedStudent.getJoiningYear()));return;
+                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),resultDTO.getSemester()+"Incomplete Marks detail",savedStudent.getDepartmentId(),savedStudent.getJoiningYear()));return;
             }
             if (!seenSubjects.add(marks.getCode())) {
-                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Duplicate subject details","",savedStudent.getJoiningYear()));return;
+                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),resultDTO.getSemester()+"Duplicate subject details",savedStudent.getDepartmentId(),savedStudent.getJoiningYear()));return;
             }
             if(!subjectMap.containsKey(marks.getCode())){
-                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Subject does not exist","",savedStudent.getJoiningYear()));return;
+                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),resultDTO.getSemester()+"Subject does not exist",savedStudent.getDepartmentId(),savedStudent.getJoiningYear()));return;
             }
             if(!currSemesterSubjetHashMap.contains(marks.getCode())){
-                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Department subject miss match","",savedStudent.getJoiningYear()));return;
+                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),resultDTO.getSemester()+"Department subject miss match",savedStudent.getDepartmentId(),savedStudent.getJoiningYear()));return;
             }
             Subject currentSubject = subjectMap.get(marks.getCode());
             if (currentSubject.getTotalExternalMarks() < marks.getExternalMarks() ||
                     currentSubject.getTotalInternalMarks() < marks.getInternalMarks() ||
                     marks.getInternalMarks() < 0 || marks.getExternalMarks() < 0) {
-                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Invalid marks range","",savedStudent.getJoiningYear()));
+                resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),resultDTO.getSemester()+"Invalid marks range",savedStudent.getDepartmentId(),savedStudent.getJoiningYear()));
                 return;
             }
             marksList.add(Marks.builder()
@@ -128,7 +128,7 @@ public class UtilityService {
             totalCredits += credits;
         }
         if (totalCredits == 0) {
-            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Total credits cannot be zero","",savedStudent.getJoiningYear()));
+            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),resultDTO.getSemester()+"Total credits cannot be zero",savedStudent.getDepartmentId(),savedStudent.getJoiningYear()));
             return;
         }
         double sgpa = weightedSum / totalCredits;
@@ -166,7 +166,7 @@ public class UtilityService {
         try {
             studentRepository.save(savedStudent);
         } catch (DataIntegrityViolationException e) {
-            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),"Duplicate entry of semester","",savedStudent.getJoiningYear()));
+            resultSaveResponse.add(new ResultSaveResponse(resultDTO.getStudentId(), "FAILED",resultDTO.getRegistrationNumber(),resultDTO.getSemester()+"Duplicate entry of semester",savedStudent.getDepartmentId(),savedStudent.getJoiningYear()));
             return;
         }
             resultRepository.save(newResult);

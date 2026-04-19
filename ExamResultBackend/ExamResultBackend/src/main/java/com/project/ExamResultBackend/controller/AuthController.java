@@ -24,7 +24,8 @@ public class AuthController {
 
     @PostMapping("/login")
     public AuthResponse login(@RequestBody AuthRequest request) {
-
+        System.out.println(request.getPassword());
+        System.out.println(request.getRegistrationNumber());
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         String.valueOf(request.getRegistrationNumber()),
@@ -37,6 +38,11 @@ public class AuthController {
 
         String token = jwtUtil.generateToken(userDetails);
 
-        return new AuthResponse(token);
+        String role = userDetails.getAuthorities()
+                .iterator()
+                .next()
+                .getAuthority(); // e.g. ROLE_ADMIN
+
+        return new AuthResponse(token, userDetails.getUsername(),role,request.getRegistrationNumber() );
     }
 }
