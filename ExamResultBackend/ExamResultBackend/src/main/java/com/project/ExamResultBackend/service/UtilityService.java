@@ -576,5 +576,29 @@ public class UtilityService {
 
         return leaderboard;
     }
+
+    public  Integer getLiveCount(String departmentCode, Integer joiningYear, Integer semester) {
+        String key = departmentCode+":"+joiningYear;
+        if(semester!=null){
+            key+=semester;
+        }
+        Integer count = redisService.get(key, Integer.class);
+        if(count==null){
+            redisService.set(key, 1, 60*10*10L);
+        }else{
+            redisService.set(key, count+1, 60*10*10L);
+        }
+        return count+1;
+    }
+
+    public void decrementLiveCount(String departmentCode, Integer joiningYear, Integer semester) {
+        String key = departmentCode+":"+joiningYear;
+        if(semester!=null){
+            key+=semester;
+        }
+        Integer count = redisService.get(key, Integer.class);
+        if(count==null)return;
+        redisService.set(key, count-1, 60*10*10L);
+    }
 }
 

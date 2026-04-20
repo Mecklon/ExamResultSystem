@@ -26,7 +26,7 @@ const Login = () => {
       const token = data.JwtToken || data.token;
       const userData = { username: data.username, role: data.role, ...data.user };
       login(userData, token);
-      navigate(userData.role === 'ROLE_ADMIN' ? '/admin' : '/student');
+      navigate(userData.role === 'ROLE_ADMIN' ? '/admin/departments' : '/student');
     }
   };
 

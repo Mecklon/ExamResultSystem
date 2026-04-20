@@ -17,18 +17,18 @@ function App() {
       <Navbar />
       <div className="flex-1 overflow-auto">
         <Routes>
-          <Route path="/login" element={!user ? <Login /> : <Navigate to={user.role === 'ROLE_ADMIN' ? '/admin' : '/student'} replace />} />
+          <Route path="/login" element={!user ? <Login /> : <Navigate to={user.role === 'ROLE_ADMIN' ? '/admin/departments' : '/student'} replace />} />
           
           <Route path="/student" element={user ? <StudentUI /> : <Navigate to="/login" replace />} />
           <Route path="/student/leaderboard" element={user ? <Leaderboard /> : <Navigate to="/login" replace />} />
           
-          <Route path="/admin" element={user && user.role === 'ROLE_ADMIN' ? <AdminUI /> : <Navigate to="/login" replace />} />
+          <Route path="/admin" element={user && user.role === 'ROLE_ADMIN' ? <Navigate to="/admin/departments" replace /> : <Navigate to="/login" replace />} />
           <Route path="/admin/leaderboard" element={user && user.role === 'ROLE_ADMIN' ? <Leaderboard /> : <Navigate to="/login" replace />} />
           <Route path="/admin/statistics" element={user && user.role === 'ROLE_ADMIN' ? <AdminStatistics /> : <Navigate to="/login" replace />} />
           <Route path="/admin/departments" element={user && user.role === 'ROLE_ADMIN' ? <AdminDepartments /> : <Navigate to="/login" replace />} />
           <Route path="/admin/publish" element={user && user.role === 'ROLE_ADMIN' ? <AdminPublish /> : <Navigate to="/login" replace />} />
 
-          <Route path="*" element={<Navigate to={user ? (user.role === 'ROLE_ADMIN' ? '/admin' : '/student') : "/login"} replace />} />
+          <Route path="*" element={<Navigate to={user ? (user.role === 'ROLE_ADMIN' ? '/admin/departments' : '/student') : "/login"} replace />} />
         </Routes>
       </div>
     </div>

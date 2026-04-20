@@ -2,8 +2,6 @@ package com.project.ExamResultBackend.controller;
 
 
 import com.project.ExamResultBackend.DTO.*;
-import com.project.ExamResultBackend.model.Result;
-import com.project.ExamResultBackend.model.Student;
 import com.project.ExamResultBackend.service.RedisService;
 import com.project.ExamResultBackend.service.ResultService;
 import com.project.ExamResultBackend.service.UtilityService;
@@ -13,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import javax.swing.event.MouseInputListener;
 import java.util.List;
 
 @RestController
@@ -60,6 +57,26 @@ public class ResultController {
         );
     }
 
+    @GetMapping("/getLiveCount/{departmentCode}/{joiningYear}")
+    public ResponseEntity<Integer> getLiveCount(
+            @PathVariable String departmentCode,
+            @PathVariable Integer joiningYear,
+            @RequestParam(required = false) Integer semester
+    ){
+        return ResponseEntity.ok(
+                utilityService.getLiveCount(departmentCode, joiningYear, semester)
+        );
+    }
+
+    @GetMapping("/decrementLiveCount/{departmentCode}/{joiningYear}")
+    public ResponseEntity<Void> decrementLiveCount(
+            @PathVariable String departmentCode,
+            @PathVariable Integer joiningYear,
+            @RequestParam(required = false) Integer semester
+    ){
+                utilityService.decrementLiveCount(departmentCode, joiningYear, semester);
+        return ResponseEntity.status(HttpStatus.OK).build();
+    }
 
     @GetMapping("/result/{studentId}")
     public ResponseEntity<List<ResultOutputDTO>> getStudentResult(@PathVariable("studentId") Long registrationNumber){

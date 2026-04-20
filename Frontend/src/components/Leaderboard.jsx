@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import useGetFetch from '../Hooks/useGetFetch';
-import { FiFilter, FiLoader, FiAlertCircle, FiAward } from 'react-icons/fi';
+import { FiFilter, FiLoader, FiAlertCircle, FiAward, FiUsers } from 'react-icons/fi';
+import api from '../api/api';
 
 const Leaderboard = () => {
   const { fetch: fetchDeptInfo, loading: deptLoading, error: deptError } = useGetFetch();
@@ -9,16 +10,57 @@ const Leaderboard = () => {
   const [departments, setDepartments] = useState([]);
   const [leaderboardData, setLeaderboardData] = useState(null);
   
+  const { fetch: fetchLiveCount, state: liveCount } = useGetFetch(null);
+  const currentViewRef = useRef(null);
+
   // Filter states
   const [selectedDept, setSelectedDept] = useState('');
   const [selectedSem, setSelectedSem] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
 
-  const handleSearch = async () => {
-    let url = `/leaderboard/${selectedDept}/${selectedYear}?limit=10`;
-    if (selectedSem) {
-      url += `&semester=${selectedSem}`;
+  const decrementLiveCount = async (dept, year, sem) => {
+    try {
+      let url = `/decrementLiveCount/${dept}/${year}`;
+      if (sem) {
+        url += `?semester=${sem}`;
+      }
+      await api.get(url);
+    } catch (err) {
+      console.error("Failed to decrement live count", err);
     }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (currentViewRef.current) {
+        const { dept, year, sem } = currentViewRef.current;
+        decrementLiveCount(dept, year, sem);
+      }
+    };
+  }, []);
+
+  const handleSearch = async () => {
+    if (currentViewRef.current) {
+      const { dept, year, sem } = currentViewRef.current;
+      decrementLiveCount(dept, year, sem);
+    }
+
+    const dept = selectedDept;
+    const year = selectedYear;
+    const sem = selectedSem;
+
+    currentViewRef.current = { dept, year, sem };
+
+    let url = `/leaderboard/${dept}/${year}?limit=10`;
+    let countUrl = `/getLiveCount/${dept}/${year}`;
+    
+    if (sem) {
+      url += `&semester=${sem}`;
+      countUrl += `?semester=${sem}`;
+    }
+
+    fetchLiveCount(countUrl);
+
     const data = await fetchLeaderboard(url);
     if (data) {
       setLeaderboardData(data);
@@ -179,7 +221,7 @@ const Leaderboard = () => {
         </div>
       ) : (
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="bg-slate-50 border-b border-slate-100 px-8 py-5">
+          <div className="bg-slate-50 border-b border-slate-100 px-8 py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
               <FiAward className="text-amber-500" />
               Top {leaderboardData.length} Students
@@ -187,6 +229,12 @@ const Leaderboard = () => {
                 ({selectedSem ? `Semester ${selectedSem} SGPA` : 'Overall CGPA'})
               </span>
             </h3>
+            {liveCount !== null && (
+              <div className="flex items-center gap-2 bg-violet-100 text-violet-700 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm border border-violet-200">
+                <FiUsers className="animate-pulse" />
+                <span>{liveCount} Live {liveCount === 1 ? 'Viewer' : 'Viewers'}</span>
+              </div>
+            )}
           </div>
           <div className="p-0 overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[500px]">
